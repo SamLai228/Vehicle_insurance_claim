@@ -13,72 +13,62 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-def plot_fraud_ratio_bar(df, category_col):
-    df_fraud = df[df['FraudFound_P'] == 1]
-    df_fraud_count = df_fraud[category_col].value_counts()
-    df_count = df[category_col].value_counts()
+# 添加自定義 CSS
+css = """
+<style>
+    /* 主要背景 */
+    .stApp {
+        background-color: #0E1117;
+    }
+    
+    /* 文字和標題 */
+    .stMarkdown, .stText, h1, h2, h3, p {
+        color: white !important;
+    }
+    
+    /* 側邊欄背景 */
+    [data-testid="stSidebar"] {
+        background-color: #262730;
+    }
+    
+    /* 側邊欄內容 */
+    [data-testid="stSidebar"] > div:first-child {
+        background-color: #262730;
+    }
+    
+    /* 側邊欄文字 */
+    [data-testid="stSidebar"] .stMarkdown {
+        color: white;
+    }
+    
+    /* 卡片背景 */
+    .css-12w0qpk {
+        background-color: #262730;
+    }
+    
+    /* 按鈕 */
+    .stButton>button {
+        background-color: #4CAF50;
+        color: white;
+    }
+    
+    /* 輸入框 */
+    .stTextInput>div>div>input {
+        background-color: #262730;
+        color: white;
+    }
+    
+    /* 選擇框 */
+    .stSelectbox>div>div>select {
+        background-color: #262730;
+        color: white;
+    }
+</style>
+"""
+st.markdown(css, unsafe_allow_html=True)
 
-    # 如果是月份相關的欄位，使用特定排序
-    if category_col in ['Month', 'MonthClaimed']:
-        month_order = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        categories = month_order  
-    else:
-        categories = df_count.index  
 
-    # 重新索引並填充缺失值
-    df_fraud_count = df_fraud_count.reindex(categories).fillna(0)
-    df_count = df_count.reindex(categories).fillna(0)
-    df_fraud_ratio = round(df_fraud_count/df_count, 2)  
-
-    # 創建圖表
-    fig = px.bar(
-        x=df_fraud_ratio.index,
-        y=df_fraud_ratio.values,
-        title=f'Fraud Ratio by {category_col}',
-        labels={'x': category_col, 'y': 'Fraud Ratio'},
-        text=df_fraud_ratio.values,
-        height=500,  # 增加高度
-        width=800    # 增加寬度
-    )
-
-    fig.update_traces(textposition='outside')
-    fig.update_layout(
-        title_x=0.5,
-        xaxis_tickangle=-45,
-        showlegend=False,
-        margin=dict(t=50, l=50, r=50, b=100)  # 調整邊距
-    )
-
-    return fig
-
-def plot_fraud_ratio_pie(df, category_col):
-    df_fraud = df[df['FraudFound_P'] == 1]
-    df_fraud_count = df_fraud[category_col].value_counts()
-    df_count = df[category_col].value_counts()
-
-    # 計算詐欺比率
-    df_fraud_ratio = round(df_fraud_count/df_count, 2)
-
-    # 創建圖表
-    fig = px.pie(
-        values=df_fraud_ratio.values,
-        names=df_fraud_ratio.index,
-        title=f'Fraud Ratio by {category_col}',
-        height=500,  # 增加高度
-        width=800    # 增加寬度
-    )
-
-    fig.update_traces(textposition='outside', textinfo='label+percent')
-    fig.update_layout(
-        title_x=0.5,
-        showlegend=True,
-        margin=dict(t=50, l=50, r=50, b=50)  # 調整邊距
-    )
-
-    return fig
-
-def plot_fraud_ratio_line(df, category_col):
+def plot_fraud_ratio(df, category_col, plot_type='bar'):
     df_fraud = df[df['FraudFound_P'] == 1]
     df_fraud_count = df_fraud[category_col].value_counts()
     df_count = df[category_col].value_counts()
@@ -88,6 +78,11 @@ def plot_fraud_ratio_line(df, category_col):
         month_order = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         categories = month_order
+    # 如果是年齡相關的欄位，使用特定排序    
+    elif category_col == 'AgeOfPolicyHolder':
+        age_order = ['16 to 17', '18 to 20', '21 to 25', '26 to 30', 
+                    '31 to 35', '36 to 40', '41 to 50', '51 to 65', 'over 65']
+        categories = age_order
     else:
         categories = df_count.index
 
@@ -96,25 +91,85 @@ def plot_fraud_ratio_line(df, category_col):
     df_count = df_count.reindex(categories).fillna(0)
     df_fraud_ratio = round(df_fraud_count/df_count, 2)
 
-    # 創建圖表
-    fig = px.line(
-        x=df_fraud_ratio.index,
-        y=df_fraud_ratio.values,
-        title=f'Fraud Ratio Trend by {category_col}',
-        labels={'x': category_col, 'y': 'Fraud Ratio'},
-        markers=True,
-        height=500,  # 增加高度
-        width=800    # 增加寬度
+    # 設置通用的圖表樣式
+    template = dict(
+        layout=dict(
+            paper_bgcolor='#0E1117',
+            plot_bgcolor='#0E1117',
+            font=dict(color='white')
+        )
     )
 
-    fig.update_traces(textposition='top center')
-    fig.update_layout(
-        title_x=0.5,
-        xaxis_tickangle=-45,
-        showlegend=False,
-        margin=dict(t=50, l=50, r=50, b=100),  # 調整邊距
-        yaxis=dict(range=[0, max(df_fraud_ratio.values) * 1.1])  # 設置y軸從0開始
-    )
+    # 根據plot_type選擇不同的圖表類型
+    if plot_type == 'pie':
+        fig = px.pie(
+            values=df_fraud_ratio.values,
+            names=df_fraud_ratio.index,
+            height=500,
+            width=800,
+            template='plotly_dark'
+        )
+        fig.update_traces(textposition='inside', textinfo='label+percent', textfont=dict(color='white'))
+        fig.update_layout(
+            showlegend=True,
+            margin=dict(t=50, l=50, r=50, b=50),
+            **template['layout']
+        )
+
+    elif plot_type == 'line':
+        fig = px.line(
+            x=df_fraud_ratio.index,
+            y=df_fraud_ratio.values,
+            labels={'x': category_col, 'y': 'Fraud Ratio'},
+            markers=True,
+            height=500,
+            width=800,
+            template='plotly_dark'
+        )
+        fig.update_traces(textposition='top center')
+        fig.update_layout(
+            xaxis_tickangle=-45,
+            showlegend=False,
+            margin=dict(t=50, l=50, r=50, b=100),
+            yaxis=dict(range=[0, max(df_fraud_ratio.values) * 1.1]),
+            **template['layout']
+        )
+
+    elif plot_type == 'hbar':  # horizontal bar plot
+        fig = px.bar(
+            x=df_fraud_ratio.values,
+            y=df_fraud_ratio.index,
+            labels={'x': 'Fraud Ratio', 'y': category_col},
+            text=df_fraud_ratio.values,
+            height=500,
+            width=800,
+            orientation='h',
+            template='plotly_dark'
+        )
+        fig.update_traces(textposition='outside')
+        fig.update_layout(
+            showlegend=False,
+            margin=dict(t=50, l=150, r=50, b=50),
+            **template['layout']
+        )
+
+    else:  # default bar plot
+        fig = px.bar(
+            x=df_fraud_ratio.index,
+            y=df_fraud_ratio.values,
+            labels={'x': category_col, 'y': 'Fraud Ratio'},
+            text=df_fraud_ratio.values,
+            height=500,
+            width=800,
+            template='plotly_dark'
+        )
+        fig.update_traces(textposition='outside')
+        fig.update_layout(
+            xaxis_tickangle=-45,
+            showlegend=False,
+            margin=dict(t=50, l=50, r=50, b=100),
+            **template['layout']
+        )
 
     return fig
 
@@ -140,9 +195,15 @@ with st.sidebar:
         index=0
     )
     
-    selected_make = st.selectbox(
-        "Select Make",
+    selected_make = st.multiselect(
+        "Select Brand",
         options=['All'] + sorted(df['Make'].unique().tolist()),
+        default=['All']
+    )
+    
+    selected_fault = st.selectbox(
+        "Select Fault",
+        options=['All'] + sorted(df['Fault'].unique().tolist()),
         index=0
     )
 
@@ -152,15 +213,93 @@ if selected_year != 'All':
     filtered_df = filtered_df[filtered_df['Year'] == selected_year]
 if selected_repnumber != 'All':
     filtered_df = filtered_df[filtered_df['RepNumber'] == selected_repnumber]
-if selected_make != 'All':
-    filtered_df = filtered_df[filtered_df['Make'] == selected_make]
+if 'All' not in selected_make:  # If 'All' is not selected
+    filtered_df = filtered_df[filtered_df['Make'].isin(selected_make)]
+if selected_fault != 'All':
+    filtered_df = filtered_df[filtered_df['Fault'] == selected_fault]
+
+# Create KPI metrics
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("""
+        <style>
+        [data-testid="stMetric"] {
+            border: 1px solid white;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    st.metric(
+        label="Total Claim Number",
+        value=f"{len(filtered_df):,}",
+        delta=None,
+        label_visibility="visible",
+        help=None,
+        delta_color="normal"
+    )
+
+with col2:
+    st.markdown("""
+        <style>
+        [data-testid="stMetric"] {
+            border: 1px solid white;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    fraud_count = len(filtered_df[filtered_df['FraudFound_P'] == 1])
+    st.metric(
+        label="Fraud Number", 
+        value=f"{fraud_count:,}",
+        delta=None,
+        label_visibility="visible",
+        help=None,
+        delta_color="normal"
+    )
+
+with col3:
+    st.markdown("""
+        <style>
+        [data-testid="stMetric"] {
+            border: 1px solid white;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    fraud_rate = fraud_count / len(filtered_df)
+    st.metric(
+        label="Fraud Rate",
+        value=f"{fraud_rate:.1%}",
+        delta=None,
+        label_visibility="visible",
+        help=None,
+        delta_color="normal"
+    )
+
+st.markdown("""
+<style>
+[data-testid="stMetricLabel"] {
+    color: white !important;
+}
+
+[data-testid="stMetricValue"] {
+    color: white !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("---")  # Add a horizontal line for separation
 
 # Create tabs
 tab1, tab2 = st.tabs(["Data Visualization", "Model Prediction"])
 
 with tab1:
     # Create four columns for the plots
-    col1, col2, col3 = st.columns(3)
+    col4, col5, col6 = st.columns(3)
     
     # with col1:
     #     # Create fraud distribution plot
@@ -182,37 +321,37 @@ with tab1:
     #     # Display plot in Streamlit
     #     st.plotly_chart(fig)
     
-    with col1:
-        st.subheader('Fraud Ratio by Month')
-        fig2 = plot_fraud_ratio_line(filtered_df, 'Month')
+    with col4:
+        st.subheader('Month')
+        fig2 = plot_fraud_ratio(filtered_df, 'Month', 'line')
         st.plotly_chart(fig2, use_container_width=True)
 
-    with col2:
-        st.subheader('Fraud Ratio by Vehicle Age')
-        fig3 = plot_fraud_ratio_bar(filtered_df, 'AgeOfVehicle')
+    with col5:
+        st.subheader('Vehicle Age')
+        fig3 = plot_fraud_ratio(filtered_df, 'AgeOfVehicle', 'bar')
         st.plotly_chart(fig3, use_container_width=True)
         
-    with col3:
-        st.subheader('Fraud Ratio by Policy Holder Age')
-        fig4 = plot_fraud_ratio_bar(filtered_df, 'AgeOfPolicyHolder')
+    with col6:
+        st.subheader('Driver Rating')
+        fig4 = plot_fraud_ratio(filtered_df, 'DriverRating', 'pie')
         st.plotly_chart(fig4, use_container_width=True)
 
     # Create second row with four columns
-    col4, col5, col6 = st.columns(3)
+    col7, col8, col9 = st.columns(3)
 
-    with col4:
-        st.subheader('Fraud Ratio by Fault')
-        fig5 = plot_fraud_ratio_pie(filtered_df, 'Fault')
+    with col7:
+        st.subheader('MaritalStatus')
+        fig5 = plot_fraud_ratio(filtered_df, 'MaritalStatus', 'bar')
         st.plotly_chart(fig5, use_container_width=True)
 
-    with col5:
-        st.subheader('Fraud Ratio by Past Claims')
-        fig7 = plot_fraud_ratio_bar(filtered_df, 'PastNumberOfClaims')
+    with col8:
+        st.subheader('Number of Past Claims')
+        fig7 = plot_fraud_ratio(filtered_df, 'PastNumberOfClaims', 'bar')
         st.plotly_chart(fig7, use_container_width=True)
 
-    with col6:
-        st.subheader('Fraud Ratio by Driver Rating')
-        fig8 = plot_fraud_ratio_bar(filtered_df, 'DriverRating')
+    with col9:
+        st.subheader('Policy Holder Age')
+        fig8 = plot_fraud_ratio(filtered_df, 'AgeOfPolicyHolder', 'hbar')
         st.plotly_chart(fig8, use_container_width=True)
 
 with tab2:
