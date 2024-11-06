@@ -4,6 +4,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 import streamlit as st
+import os
+from pathlib import Path
 
 # 在最開始設置頁面配置
 st.set_page_config(
@@ -177,7 +179,11 @@ def plot_fraud_ratio(df, category_col, plot_type='bar'):
 st.title('Vehicle Insurance Fraud Analysis')
 
 # Load data
-df = pd.read_csv('../data/processed/df_for_visualisation.csv')
+# 獲取當前文件的目錄
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 讀取數據
+df = pd.read_csv(os.path.join(current_dir, 'data', 'df_for_visualisation.csv'))
 
 # Add sidebar for filters
 with st.sidebar:
