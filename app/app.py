@@ -367,15 +367,26 @@ with tab1:
 
 with tab2:
     # Load the trained model
-    import pickle
+    import joblib
+    import os
 
-    # 獲取當前文件的目錄
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # 載入模型
-    model_path = os.path.join(current_dir, 'models', 'xgboost.pkl')
-    with open(model_path, 'rb') as f:
-        model = pickle.load(f)
+    try:
+        # 獲取當前文件的目錄
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+        # 載入模型
+        model_path = os.path.join(current_dir, 'models', 'xgboost.pkl')
+        model = joblib.load(model_path)
+    
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
+        st.write("Debug info:")
+        st.write(f"Current working directory: {os.getcwd()}")
+        st.write(f"Model path: {model_path}")
+        if os.path.exists(os.path.join(current_dir, 'models')):
+            st.write(f"Files in models directory: {os.listdir(os.path.join(current_dir, 'models'))}")
+        else:
+            st.write("Models directory not found")
 
     # Add file uploader
     st.subheader("Batch Prediction")
