@@ -373,7 +373,7 @@ with tab2:
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # 載入模型
-    model_path = os.path.join(current_dir, 'models', 'balbag_xgboost.pkl')
+    model_path = os.path.join(current_dir, 'models', 'xgboost.pkl')
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
 
