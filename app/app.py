@@ -368,14 +368,14 @@ with tab1:
 with tab2:
     # Load the trained model
     import pickle
-    import joblib
 
     # 獲取當前文件的目錄
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # 載入模型
-    model_path = os.path.join(current_dir, 'models', 'balanced_random_forest_new2.pkl')
-    model = joblib.load(model_path)
+    model_path = os.path.join(current_dir, 'models', 'xgboost_new2')
+    with open(model_path, 'rb') as f:
+        model = pickle.load(f)
 
     # Add file uploader
     st.subheader("Batch Prediction")
