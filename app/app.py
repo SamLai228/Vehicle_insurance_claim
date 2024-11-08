@@ -82,9 +82,14 @@ def plot_fraud_ratio(df, category_col, plot_type='bar'):
         categories = month_order
     # 如果是年齡相關的欄位，使用特定排序    
     elif category_col == 'AgeOfPolicyHolder':
-        age_order = ['16 to 17', '18 to 20', '21 to 25', '26 to 30', 
-                    '31 to 35', '36 to 40', '41 to 50', '51 to 65', 'over 65']
+        age_order = ['under 30', '31 to 35', '36 to 40', '41 to 50', '51 and above']
         categories = age_order
+    elif category_col == 'PastNumberOfClaims':
+        NClaims_order = ['none', '1', '2 to 4', 'more than 4']
+        categories = NClaims_order
+    elif category_col == 'AgeOfVehicle':
+        AgeV_order = ['4 years or less', '5 years', '6 years', '7 years', 'more than 7']
+        categories = AgeV_order
     else:
         categories = df_count.index
 
@@ -128,6 +133,7 @@ def plot_fraud_ratio(df, category_col, plot_type='bar'):
             width=800,
             template='plotly_dark'
         )
+        fig.update_traces(line=dict(width=6))  # 增加線條寬度
         fig.update_traces(textposition='top center')
         fig.update_layout(
             xaxis_tickangle=-45,
@@ -304,61 +310,60 @@ st.markdown("---")  # Add a horizontal line for separation
 tab1, tab2 = st.tabs(["Data Visualization", "Model Prediction"])
 
 with tab1:
-    # Create four columns for the plots
-    col4, col5, col6 = st.columns(3)
-    
-    # with col1:
-    #     # Create fraud distribution plot
-    #     st.subheader('Distribution of Fraud Cases')
-    #     fraud_dist = filtered_df['FraudFound_P'].value_counts(normalize=True)
-    #     fig = px.pie(
-    #         values=fraud_dist.values,
-    #         names=fraud_dist.index,
-    #         labels={'names': 'Fraud Found', 'values': 'Percentage'},
-    #         title='Distribution of Fraud Cases'
-    #     )
-
-    #     fig.update_traces(textposition='inside', textinfo='percent+label')
-    #     fig.update_layout(
-    #         title_x=0.5,
-    #         showlegend=True
-    #     )
-
-    #     # Display plot in Streamlit
-    #     st.plotly_chart(fig)
+    # Create three columns for the plots
+    col4, col5, col6 = st.columns([1.5,1,1])
     
     with col4:
-        st.subheader('Month')
-        fig2 = plot_fraud_ratio(filtered_df, 'Month', 'line')
+        st.subheader('MonthClaimed')
+        fig2 = plot_fraud_ratio(filtered_df, 'MonthClaimed', 'line')
         st.plotly_chart(fig2, use_container_width=True)
-
-    with col5:
-        st.subheader('Vehicle Age')
-        fig3 = plot_fraud_ratio(filtered_df, 'AgeOfVehicle', 'bar')
-        st.plotly_chart(fig3, use_container_width=True)
         
-    with col6:
-        st.subheader('Driver Rating')
-        fig4 = plot_fraud_ratio(filtered_df, 'DriverRating', 'pie')
+    with col5:
+        st.subheader('VehiclePrice')
+        fig4 = plot_fraud_ratio(filtered_df, 'VehiclePrice', 'bar')
         st.plotly_chart(fig4, use_container_width=True)
 
-    # Create second row with four columns
-    col7, col8, col9 = st.columns(3)
-
-    with col7:
-        st.subheader('MaritalStatus')
-        fig5 = plot_fraud_ratio(filtered_df, 'MaritalStatus', 'bar')
+    with col6:
+        st.subheader('Vehicle Age')
+        fig5 = plot_fraud_ratio(filtered_df, 'AgeOfVehicle', 'bar')
         st.plotly_chart(fig5, use_container_width=True)
 
+    # Create second row with four columns
+    col8, col9, col10 = st.columns([2,1,1])
+
     with col8:
+        st.subheader('Policy Holder Age')
+        fig6 = plot_fraud_ratio(filtered_df, 'AgeOfPolicyHolder', 'hbar')
+        st.plotly_chart(fig6, use_container_width=True)
+
+    with col9:
         st.subheader('Number of Past Claims')
         fig7 = plot_fraud_ratio(filtered_df, 'PastNumberOfClaims', 'bar')
         st.plotly_chart(fig7, use_container_width=True)
 
-    with col9:
-        st.subheader('Policy Holder Age')
-        fig8 = plot_fraud_ratio(filtered_df, 'AgeOfPolicyHolder', 'hbar')
+    with col10:
+        st.subheader('BasePolicy')
+        fig8 = plot_fraud_ratio(filtered_df, 'BasePolicy', 'bar')
         st.plotly_chart(fig8, use_container_width=True)
+
+    # Create risk groups table
+    st.subheader('高風險組合')
+    risk_groups = filtered_df.groupby(['AgeOfPolicyHolder', 'BasePolicy', 'VehiclePrice']).agg(
+        total_claims=('FraudFound_P', 'count'),
+        fraud_claims=('FraudFound_P', 'sum')
+    ).reset_index()
+
+    # Calculate fraud rate
+    risk_groups['Fraud_Rate'] = risk_groups['fraud_claims'] / risk_groups['total_claims']
+
+    # Sort by fraud rate in descending order
+    risk_groups = risk_groups.sort_values('Fraud_Rate', ascending=False)
+
+    # Format fraud rate as percentage
+    risk_groups['Fraud_Rate'] = risk_groups['Fraud_Rate'].map('{:.1%}'.format)
+
+    # Display the table without index
+    st.dataframe(risk_groups.head(10).set_index('AgeOfPolicyHolder').reset_index(), use_container_width=True, hide_index=True)
 
 with tab2:
     # Load the trained model
@@ -368,7 +373,7 @@ with tab2:
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # 載入模型
-    model_path = os.path.join(current_dir, 'models', 'balanced_random_forest.pkl')
+    model_path = os.path.join(current_dir, 'models', 'balbag_xgboost.pkl')
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
 
