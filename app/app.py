@@ -11,7 +11,7 @@ from pathlib import Path
 st.set_page_config(
     page_title="Vehicle Insurance Fraud Analysis",
     page_icon="🚗",
-    layout="wide",  # 使用寬屏布局
+    layout="wide",  
     initial_sidebar_state="expanded"
 )
 
@@ -377,7 +377,72 @@ with tab2:
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
 
-    # Add file uploader
+    # Add single prediction section
+    st.subheader("Single Prediction")
+    
+    # Create input fields for features
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        fault = st.selectbox('Fault', ['Policy Holder', 'Third Party'])
+        police_report = st.selectbox('Police Report Filed', ['Yes', 'No'])
+        policyholder_age = st.selectbox('Age of Policy Holder', ['under 30', '31 to 35', '36 to 40', '41 to 50', '51 and above'])
+        policy_type = st.selectbox('Policy Type', ['Sport - Liability', 'Sport - Collision', 'Sport - All Perils', 'Sedan - Liability',
+                                                   'Sedan - Collision', 'Sedan - All Perils', 'Utility - Liability',
+                                                   'Utility - Collision', 'Utility - All Perils'])
+    
+    with col2:
+        deductible = st.selectbox('Deductible', [300, 400, 500, 600, 700])
+        month = st.selectbox('Month', list(range(1, 13)))
+        week_of_month = st.selectbox('Week of Month', list(range(1, 6)))
+        day_of_week = st.selectbox('Day of Week', ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                                                   'Friday', 'Saturday', 'Sunday'])
+    
+    with col3:
+        year = st.selectbox('Year', [1994, 1995, 1996])
+        month_claimed = st.selectbox('Month Claimed', list(range(1, 13)))
+        week_of_month_claimed = st.selectbox('Week of Month Claimed', list(range(1, 6)))
+
+    if st.button('Predict'):
+        # Create a dataframe from inputs
+        input_dict = {
+            'AgeOfPolicyHolder_41 to 50': [1 if policyholder_age == '41 to 50' else 0],
+            'Fault': [0 if fault == 'Policy Holder' else 1],
+            'PoliceReportFiled': [1 if police_report == 'Yes' else 0],
+            'PolicyType_Sedan - Collision': [1 if policy_type == 'Sedan - Collision' else 0],
+            'PolicyType_Sedan - Liability': [1 if policy_type == 'Sedan - Liability' else 0],
+            'HiskRisk_DeductibleAMT': [1 if deductible in [300, 500] else 0],
+            'Month_Dec': [1 if month == 12 else 0],
+            'Month_Mar': [1 if month == 3 else 0],
+            'WeekOfMonth_2': [1 if week_of_month == 2 else 0],
+            'WeekOfMonth_3': [1 if week_of_month == 3 else 0],
+            'WeekOfMonth_4': [1 if week_of_month == 4 else 0],
+            'DayOfWeek_Sunday': [1 if day_of_week == 'Sunday' else 0],
+            'Year_1995': [1 if year == 1995 else 0],
+            'Year_1996': [1 if year == 1996 else 0],
+            'MonthClaimed_Aug': [1 if month_claimed == 8 else 0],
+            'MonthClaimed_Dec': [1 if month_claimed == 12 else 0],
+            'MonthClaimed_Feb': [1 if month_claimed == 2 else 0],
+            'MonthClaimed_Jan': [1 if month_claimed == 1 else 0],
+            'MonthClaimed_Jun': [1 if month_claimed == 6 else 0],
+            'MonthClaimed_Nov': [1 if month_claimed == 11 else 0],
+            'WeekOfMonthClaimed_2': [1 if week_of_month_claimed == 2 else 0]
+        }
+        
+        single_input = pd.DataFrame(input_dict)
+        
+        # Make prediction
+        prediction = model.predict(single_input)
+        probability = model.predict_proba(single_input)
+        
+        # Display results
+        st.write("Prediction Result:")
+        if prediction[0] == 1:
+            st.error(f"Fraud Detected! Probability: {probability[0][1]:.2%}")
+        else:
+            st.success(f"No Fraud Detected. Probability: {probability[0][1]:.2%}")
+
+    # Add batch prediction section
     st.subheader("Batch Prediction")
     uploaded_file = st.file_uploader("Upload a CSV file for prediction", type="csv")
 
@@ -414,5 +479,6 @@ with tab2:
                 label="Download predictions as CSV",
                 data=csv,
                 file_name="fraud_predictions.csv",
-                mime="text/csv"
+                mime="text/csv",
+                type="primary"  # This sets the button color to green
             )
