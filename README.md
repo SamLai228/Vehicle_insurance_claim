@@ -17,3 +17,6 @@ notebooks裡有 3 個檔案，
 
 ## app 資料夾
 app.py 將Modeling.ipynb裡訓練好的模型及Plotly圖透過 Streamlit 製作成一個 dashboard
+
+
+Dashboard link: https://sam-vehicle-insurance-claim.streamlit.app/ 
