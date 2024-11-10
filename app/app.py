@@ -98,7 +98,7 @@ def plot_fraud_ratio(df, category_col, plot_type='bar'):
     df_count = df_count.reindex(categories).fillna(0)
     df_fraud_ratio = round(df_fraud_count/df_count, 2)
 
-    # 設置通用的圖表樣式
+    # 設定圖表樣式
     template = dict(
         layout=dict(
             paper_bgcolor='#0E1117',
@@ -133,7 +133,7 @@ def plot_fraud_ratio(df, category_col, plot_type='bar'):
             width=800,
             template='plotly_dark'
         )
-        fig.update_traces(line=dict(width=6))  # 增加線條寬度
+        fig.update_traces(line=dict(width=6))  
         fig.update_traces(textposition='top center')
         fig.update_layout(
             xaxis_tickangle=-45,
@@ -143,7 +143,7 @@ def plot_fraud_ratio(df, category_col, plot_type='bar'):
             **template['layout']
         )
 
-    elif plot_type == 'hbar':  # horizontal bar plot
+    elif plot_type == 'hbar':  
         fig = px.bar(
             x=df_fraud_ratio.values,
             y=df_fraud_ratio.index,
